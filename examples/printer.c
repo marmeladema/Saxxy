@@ -17,7 +17,7 @@ void token_printer(const saxxy_token *token, void *user_handle) {
 			fwrite("\n", 1, 1, stdout);
 		break;
 		
-		case SAXXY_TOKEN_CHARACTER:
+		case SAXXY_TOKEN_TEXT:
 			fwrite("character: ", strlen("character: "), 1, stdout);
 			fwrite(token->data.character.ptr, token->data.character.len, 1, stdout);
 			fwrite("\n", 1, 1, stdout);
