@@ -221,12 +221,12 @@ void saxxy_html_parse(saxxy_parser *parser) {
 		if(i+2 >= parser->len) {
 			 break;
 		}
-		
+		l = 0;
 		if(parser->data[i+1] == '!') {
 			l = saxxy_comment_parse(parser, i);
 			token.type = SAXXY_TOKEN_COMMENT;
 			token.data.comment = parser->current_comment;
-		} else {
+		} else if(isalpha(parser->data[i+1]) != 0 || parser->data[i+1] == '/') {
 			l = saxxy_tag_parse(parser, i);
 			token.type = SAXXY_TOKEN_TAG;
 			token.data.tag = parser->current_tag;
