@@ -37,7 +37,6 @@ typedef struct saxxy_tag {
 } saxxy_tag;
 
 typedef enum saxxy_token_type {
-	SAXXY_TOKEN_DOCTYPE,
 	SAXXY_TOKEN_TAG,
 	SAXXY_TOKEN_COMMENT,
 	SAXXY_TOKEN_TEXT,
@@ -59,6 +58,7 @@ typedef struct saxxy_parser {
 	saxxy_token_handler token_handler;
 	void *user_handle;
 	saxxy_tag current_tag;
+	saxxy_string current_comment;
 	const uint8_t *data;
 	size_t len;
 } saxxy_parser;

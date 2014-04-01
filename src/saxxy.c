@@ -104,7 +104,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 }
 
 size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
-	if(off+3 >= parser->len || parser->data[off] != '<') {
+	if(off+3 > parser->len || parser->data[off] != '<') {
 		return 0;
 	}
 	size_t s = off, l;
@@ -115,9 +115,7 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 		
 	}
 	else
-	if(parser->data[off] == '!') {
-		
-	}
+
 	else
 #endif
 	parser->current_tag.type = SAXXY_TAG_OPEN;
@@ -165,9 +163,49 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 	return 0;
 }
 
+size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
+	if(off+3 > parser->len || parser->data[off] != '<' || parser->data[off+1] != '!') {
+		return 0;
+	}
+	size_t s = off, l;
+	off += 2;
+	
+	bool normal_mode = false;
+	if(off+1 < parser->len && parser->data[off] == '-' && parser->data[off+1] == '-') {
+		normal_mode = true;
+		off += 2;
+	}
+	
+	parser->current_comment.ptr = parser->data+off;
+	parser->current_comment.len = 0;
+	if(normal_mode) {
+		while(parser->data[off] != '>' || parser->data[off-1] != '-' || parser->data[off-2] != '-') {
+			off++;
+			parser->current_comment.len++;
+			if(off >= parser->len) {
+				return 0;
+			}
+		}
+		if(off > s+4) {
+			parser->current_comment.len -= 2;
+		}
+	} else {
+		while(parser->data[off] != '>') {
+			off++;
+			if(off >= parser->len) {
+				return 0;
+			}
+		}
+		parser->current_comment.len = off-s-2;
+	}
+	
+	
+	return off-s+1;
+}
+
 void saxxy_html_parse(saxxy_parser *parser) {
 	size_t level = 0, s = 0, i = 0, l = 0;
-	saxxy_token token;
+	saxxy_token text_token, token;
 	
 	if(!parser) {
 		return;
@@ -176,19 +214,32 @@ void saxxy_html_parse(saxxy_parser *parser) {
 	while(i < parser->len) {
 		while(parser->data[i] != '<') {
 			i++;
-		}
-		l = saxxy_tag_parse(parser, i);
-		if(l > 0) {
-			if(i > s) {
-				token.type = SAXXY_TOKEN_TEXT;
-				token.data.character.ptr = parser->data + s;
-				token.data.character.len = i - s;
-				if(parser->token_handler) {
-					parser->token_handler(&token, parser->user_handle);
-				}
+			if(i >= parser->len) {
+				break;
 			}
+		}
+		if(i+2 >= parser->len) {
+			 break;
+		}
+		
+		if(parser->data[i+1] == '!') {
+			l = saxxy_comment_parse(parser, i);
+			token.type = SAXXY_TOKEN_COMMENT;
+			token.data.comment = parser->current_comment;
+		} else {
+			l = saxxy_tag_parse(parser, i);
 			token.type = SAXXY_TOKEN_TAG;
 			token.data.tag = parser->current_tag;
+		}
+		if(l > 0) {
+			if(i > s) {
+				text_token.type = SAXXY_TOKEN_TEXT;
+				text_token.data.character.ptr = parser->data + s;
+				text_token.data.character.len = i - s;
+				if(parser->token_handler) {
+					parser->token_handler(&text_token, parser->user_handle);
+				}
+			}
 			if(parser->token_handler) {
 				parser->token_handler(&token, parser->user_handle);
 			}

@@ -22,6 +22,12 @@ void token_printer(const saxxy_token *token, void *user_handle) {
 			fwrite(token->data.character.ptr, token->data.character.len, 1, stdout);
 			fwrite("\n", 1, 1, stdout);
 		break;
+		
+		case SAXXY_TOKEN_COMMENT:
+			fwrite("comment: ", strlen("comment: "), 1, stdout);
+			fwrite(token->data.comment.ptr, token->data.comment.len, 1, stdout);
+			fwrite("\n", 1, 1, stdout);
+		break;
 	}
 }
 
