@@ -139,7 +139,8 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 		
 		l = saxxy_attribute_parse(parser, off);
 		if(off + l >= parser->len) {
-			return parser->len - s;
+			return 0;
+			// return parser->len - s;
 		}
 		off += l;
 		
@@ -260,6 +261,15 @@ void saxxy_html_parse(saxxy_parser *parser) {
 			// printf("s: %lu, %c\n", s, parser->data[s]);
 		} else {
 			i++;
+		}
+	}
+	
+	if(parser->len > s) {
+		text_token.type = SAXXY_TOKEN_TEXT;
+		text_token.data.text.ptr = parser->data + s;
+		text_token.data.text.len = parser->len - s;
+		if(parser->token_handler) {
+			parser->token_handler(&text_token, parser->user_handle);
 		}
 	}
 }
