@@ -222,7 +222,7 @@ void saxxy_html_parse(saxxy_parser *parser) {
 			 break;
 		}
 		l = 0;
-		if(parser->data[i+1] == '!') {
+		if(!parser->inside_script && parser->data[i+1] == '!') {
 			l = saxxy_comment_parse(parser, i);
 			token.type = SAXXY_TOKEN_COMMENT;
 			token.data.comment = parser->current_comment;
@@ -230,6 +230,14 @@ void saxxy_html_parse(saxxy_parser *parser) {
 			l = saxxy_tag_parse(parser, i);
 			token.type = SAXXY_TOKEN_TAG;
 			token.data.tag = parser->current_tag;
+		}
+		// printf("l: %lu\n", l);
+		if(l > 0 && parser->inside_script) {
+			if(!TOKEN_TAG_CLOSE_MATCH_STATIC("script", token)) {
+				l = 0;
+			} else {
+				parser->inside_script = false;
+			}
 		}
 		if(l > 0) {
 			if(i > s) {
@@ -240,6 +248,10 @@ void saxxy_html_parse(saxxy_parser *parser) {
 					parser->token_handler(&text_token, parser->user_handle);
 				}
 			}
+			if(TOKEN_TAG_OPEN_MATCH_STATIC("script", token) && !token.data.tag.self_closing) {
+				parser->inside_script = true;
+			}
+			
 			if(parser->token_handler) {
 				parser->token_handler(&token, parser->user_handle);
 			}

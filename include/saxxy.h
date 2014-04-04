@@ -5,6 +5,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define STRLEN_STATIC(s) 					(sizeof(s)-1)
+#define STRCMP_STATIC(s, s2) 				((STRLEN_STATIC(s) == (s2).len) && (strncmp((s), (s2).ptr, (s2).len) == 0))
+#define STRCASECMP_STATIC(s, s2) 			((STRLEN_STATIC(s) == (s2).len) && (strncasecmp((s), (s2).ptr, (s2).len) == 0))
+
+#define TAG_MATCH_STATIC(s, t) 				(STRCASECMP_STATIC(s, (t).name))
+#define TAG_OPEN_MATCH_STATIC(s, t) 		((t).type == SAXXY_TAG_OPEN && (TAG_MATCH_STATIC(s, (t))))
+#define TAG_CLOSE_MATCH_STATIC(s, t) 		((t).type == SAXXY_TAG_CLOSE && (TAG_MATCH_STATIC(s, (t))))
+
+#define TOKEN_TAG_MATCH_STATIC(s, t) 		((t).type == SAXXY_TOKEN_TAG && (TAG_MATCH_STATIC(s, (t).data.tag)))
+#define TOKEN_TAG_OPEN_MATCH_STATIC(s, t) 	((t).type == SAXXY_TOKEN_TAG && (TAG_OPEN_MATCH_STATIC(s, (t).data.tag)))
+#define TOKEN_TAG_CLOSE_MATCH_STATIC(s, t) 	((t).type == SAXXY_TOKEN_TAG && (TAG_CLOSE_MATCH_STATIC(s, (t).data.tag)))
+
 typedef struct saxxy_string {
 	const uint8_t *ptr;
 	size_t len;
@@ -57,10 +69,12 @@ typedef void (*saxxy_token_handler)(const saxxy_token *token, void *user_handle)
 typedef struct saxxy_parser {
 	saxxy_token_handler token_handler;
 	void *user_handle;
-	saxxy_tag current_tag;
-	saxxy_string current_comment;
 	const uint8_t *data;
 	size_t len;
+	
+	saxxy_tag current_tag;
+	saxxy_string current_comment;
+	bool inside_script;
 } saxxy_parser;
 
 void saxxy_html_parse(saxxy_parser *parser);

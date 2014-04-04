@@ -1,4 +1,3 @@
 TODO:
-- handle script/template correctly
-- handle comment
-- handle doctype
+- handle multiple charset with iconv ? UTF16 and UTF32 at least
+
