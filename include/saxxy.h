@@ -60,7 +60,7 @@ typedef struct saxxy_token {
 	union {
 		saxxy_tag tag;
 		saxxy_string comment;
-		saxxy_string character;
+		saxxy_string text;
 	} data;
 } saxxy_token;
 

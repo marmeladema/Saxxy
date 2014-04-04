@@ -20,7 +20,7 @@ void script_handler(const saxxy_token *token, void *user_handle) {
 		
 		case SAXXY_TOKEN_TEXT:
 			if(inside_script && *inside_script) {
-				fwrite(token->data.character.ptr, token->data.character.len, 1, stdout);
+				fwrite(token->data.text.ptr, token->data.text.len, 1, stdout);
 			}
 		break;
 	}

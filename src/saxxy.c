@@ -242,8 +242,8 @@ void saxxy_html_parse(saxxy_parser *parser) {
 		if(l > 0) {
 			if(i > s) {
 				text_token.type = SAXXY_TOKEN_TEXT;
-				text_token.data.character.ptr = parser->data + s;
-				text_token.data.character.len = i - s;
+				text_token.data.text.ptr = parser->data + s;
+				text_token.data.text.len = i - s;
 				if(parser->token_handler) {
 					parser->token_handler(&text_token, parser->user_handle);
 				}
