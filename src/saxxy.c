@@ -7,7 +7,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 	size_t s = off;
 	parser->current_tag.attributes.count = 0;
 	while(off < parser->len && parser->data[off] != '>') {
-		while(parser->data[off] == ' ' || parser->data[off] == '\t' || parser->data[off] == '\r' || parser->data[off] == '\n') {
+		while(isspace(parser->data[off]) || parser->data[off] == '/') {
 			off++;
 			if(off >= parser->len || parser->data[off] == '>') {
 				return off-s;
@@ -16,7 +16,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 		saxxy_string name;
 		name.ptr = parser->data+off;
 		name.len = 0;
-		while(parser->data[off] != ' ' && parser->data[off] != '\t' && parser->data[off] != '\r' && parser->data[off] != '\n' && parser->data[off] != '=') {
+		while(!isspace(parser->data[off]) && parser->data[off] != '=') {
 			off++;
 			name.len++;
 			if(off >= parser->len || parser->data[off] == '>') {
@@ -39,6 +39,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 		}
 		memset(parser->current_tag.attributes.ptr + parser->current_tag.attributes.count, 0, sizeof(saxxy_attribute));
 		parser->current_tag.attributes.count++;
+		parser->current_tag.attributes.ptr[parser->current_tag.attributes.count-1].name = name;
 		// fwrite("name: ", strlen("name: "), 1, stdout);
 		// fwrite(name.ptr, name.len, 1, stdout);
 		// fwrite("\n", 1, 1, stdout);
@@ -94,10 +95,8 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 					}
 				}
 			}
-			
-			// fwrite("value: ", strlen("value: "), 1, stdout);
-			// fwrite(value.ptr, value.len, 1, stdout);
-			// fwrite("\n", 1, 1, stdout);
+			parser->current_tag.attributes.ptr[parser->current_tag.attributes.count-1].value = value;
+			parser->current_tag.attributes.ptr[parser->current_tag.attributes.count-1].value = value;
 		}
 	}
 	return off-s;
@@ -129,7 +128,7 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 		}
 	}
 	if(('a' <= parser->data[off] && parser->data[off] <= 'z') || ('A' <= parser->data[off] && parser->data[off] <= 'Z')) {
-		while(parser->data[off] != ' ' && parser->data[off] != '\t' && parser->data[off] != '\r' && parser->data[off] != '\n' && parser->data[off] != '>') {
+		while(!isspace(parser->data[off]) && parser->data[off] != '/' && parser->data[off] != '>') {
 			off++;
 			if(off >= parser->len) {
 				return 0;

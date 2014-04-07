@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 
 void token_printer(const saxxy_token *token, void *user_handle) {
+	size_t i;
 	switch(token->type) {
 		case SAXXY_TOKEN_TAG:
 			if(token->data.tag.type == SAXXY_TAG_OPEN) {
@@ -15,6 +16,15 @@ void token_printer(const saxxy_token *token, void *user_handle) {
 			fwrite(token->data.tag.name.ptr, token->data.tag.name.len, 1, stdout);
 			fwrite(">", strlen(">"), 1, stdout);
 			fwrite("\n", 1, 1, stdout);
+			for(i = 0; i < token->data.tag.attributes.count; i++) {
+				printf("attribute_name(%lu): ", token->data.tag.attributes.ptr[i].name.len);
+				fwrite(token->data.tag.attributes.ptr[i].name.ptr, token->data.tag.attributes.ptr[i].name.len, 1, stdout);
+				fwrite("\n", strlen("\n"), 1, stdout);
+			
+				printf("attribute_value(%lu): ", token->data.tag.attributes.ptr[i].value.len);
+				fwrite(token->data.tag.attributes.ptr[i].value.ptr, token->data.tag.attributes.ptr[i].value.len, 1, stdout);
+				fwrite("\n", strlen("\n"), 1, stdout);
+			}
 		break;
 		
 		case SAXXY_TOKEN_TEXT:
