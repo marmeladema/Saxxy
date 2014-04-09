@@ -23,6 +23,9 @@ void script_handler(const saxxy_token *token, void *user_handle) {
 				fwrite(token->data.text.ptr, token->data.text.len, 1, stdout);
 			}
 		break;
+		
+		default:
+		break;
 	}
 }
 

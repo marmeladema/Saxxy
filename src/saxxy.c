@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 	size_t s = off;
@@ -65,7 +66,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 			if(off+1 < parser->len && parser->data[off] == '\'') {
 				off++;
 				value.ptr = parser->data+off;
-				uint8_t *c = memchr(parser->data+off, '\'', parser->len-off);
+				char *c = memchr(parser->data+off, '\'', parser->len-off);
 				if(c) {
 					value.len = c - (parser->data+off);
 					off++;
@@ -77,7 +78,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 			if(off+1 < parser->len && parser->data[off] == '"') {
 				off++;
 				value.ptr = parser->data+off;
-				uint8_t *c = memchr(parser->data+off, '"', parser->len-off);
+				char *c = memchr(parser->data+off, '"', parser->len-off);
 				if(c) {
 					value.len = c - (parser->data+off);
 					off++;
@@ -167,7 +168,7 @@ size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
 	if(off+3 > parser->len || parser->data[off] != '<' || parser->data[off+1] != '!') {
 		return 0;
 	}
-	size_t s = off, l;
+	size_t s = off;
 	off += 2;
 	
 	bool normal_mode = false;
@@ -204,7 +205,7 @@ size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
 }
 
 void saxxy_html_parse(saxxy_parser *parser) {
-	size_t level = 0, s = 0, i = 0, l = 0;
+	size_t s = 0, i = 0, l = 0;
 	saxxy_token text_token, token;
 	
 	if(!parser) {

@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-#include <stdint.h>
+#include <strings.h>
 
 #define STRLEN_STATIC(s) 					(sizeof(s)-1)
 
@@ -32,7 +32,7 @@
 #define TOKEN_TAG_CLOSE_MATCH(s, t) 		((t).type == SAXXY_TOKEN_TAG && (TAG_CLOSE_MATCH(s, (t).data.tag)))
 
 typedef struct saxxy_string {
-	const uint8_t *ptr;
+	const char *ptr;
 	size_t len;
 } saxxy_string;
 
@@ -78,12 +78,12 @@ typedef struct saxxy_token {
 	} data;
 } saxxy_token;
 
-typedef void (*saxxy_token_handler)(const saxxy_token *token, void *user_handle);
+typedef void (*saxxy_token_handler)(const saxxy_token *token, void __attribute__ ((unused)) *user_handle);
 
 typedef struct saxxy_parser {
 	saxxy_token_handler token_handler;
 	void *user_handle;
-	const uint8_t *data;
+	const char *data;
 	size_t len;
 	
 	saxxy_tag current_tag;

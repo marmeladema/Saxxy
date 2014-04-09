@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
-void token_printer(const saxxy_token *token, void *user_handle) {
+void token_printer(const saxxy_token *token, void __attribute__ ((unused)) *user_handle) {
 	size_t i;
 	switch(token->type) {
 		case SAXXY_TOKEN_TAG:
@@ -37,6 +37,9 @@ void token_printer(const saxxy_token *token, void *user_handle) {
 			fwrite("comment: ", strlen("comment: "), 1, stdout);
 			fwrite(token->data.comment.ptr, token->data.comment.len, 1, stdout);
 			fwrite("\n", 1, 1, stdout);
+		break;
+		
+		default:
 		break;
 	}
 }
