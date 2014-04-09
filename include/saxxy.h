@@ -6,16 +6,30 @@
 #include <stdint.h>
 
 #define STRLEN_STATIC(s) 					(sizeof(s)-1)
+
 #define STRCMP_STATIC(s, s2) 				((STRLEN_STATIC(s) == (s2).len) && (strncmp((s), (s2).ptr, (s2).len) == 0))
+#define STRCMP(s, s2) 						(((s).len == (s2).len) && (strncmp((s).ptr, (s2).ptr, (s2).len) == 0))
+
 #define STRCASECMP_STATIC(s, s2) 			((STRLEN_STATIC(s) == (s2).len) && (strncasecmp((s), (s2).ptr, (s2).len) == 0))
+#define STRCASECMP(s, s2) 					(((s).len == (s2).len) && (strncasecmp((s).ptr, (s2).ptr, (s2).len) == 0))
 
 #define TAG_MATCH_STATIC(s, t) 				(STRCASECMP_STATIC(s, (t).name))
+#define TAG_MATCH(s, t) 					(STRCASECMP(s, (t).name))
+
 #define TAG_OPEN_MATCH_STATIC(s, t) 		((t).type == SAXXY_TAG_OPEN && (TAG_MATCH_STATIC(s, (t))))
+#define TAG_OPEN_MATCH(s, t) 				((t).type == SAXXY_TAG_OPEN && (TAG_MATCH(s, (t))))
+
 #define TAG_CLOSE_MATCH_STATIC(s, t) 		((t).type == SAXXY_TAG_CLOSE && (TAG_MATCH_STATIC(s, (t))))
+#define TAG_CLOSE_MATCH(s, t) 				((t).type == SAXXY_TAG_CLOSE && (TAG_MATCH(s, (t))))
 
 #define TOKEN_TAG_MATCH_STATIC(s, t) 		((t).type == SAXXY_TOKEN_TAG && (TAG_MATCH_STATIC(s, (t).data.tag)))
+#define TOKEN_TAG_MATCH(s, t) 				((t).type == SAXXY_TOKEN_TAG && (TAG_MATCH(s, (t).data.tag)))
+
 #define TOKEN_TAG_OPEN_MATCH_STATIC(s, t) 	((t).type == SAXXY_TOKEN_TAG && (TAG_OPEN_MATCH_STATIC(s, (t).data.tag)))
+#define TOKEN_TAG_OPEN_MATCH(s, t)		 	((t).type == SAXXY_TOKEN_TAG && (TAG_OPEN_MATCH(s, (t).data.tag)))
+
 #define TOKEN_TAG_CLOSE_MATCH_STATIC(s, t) 	((t).type == SAXXY_TOKEN_TAG && (TAG_CLOSE_MATCH_STATIC(s, (t).data.tag)))
+#define TOKEN_TAG_CLOSE_MATCH(s, t) 		((t).type == SAXXY_TOKEN_TAG && (TAG_CLOSE_MATCH(s, (t).data.tag)))
 
 typedef struct saxxy_string {
 	const uint8_t *ptr;
@@ -74,7 +88,8 @@ typedef struct saxxy_parser {
 	
 	saxxy_tag current_tag;
 	saxxy_string current_comment;
-	bool inside_script;
+	bool inside_raw_element;
+	saxxy_string raw_element;
 } saxxy_parser;
 
 void saxxy_html_parse(saxxy_parser *parser);

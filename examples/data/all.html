@@ -1,0 +1,29 @@
+<html>
+
+<head>
+
+<script>
+function pass_tests() {
+	document.getElementById("Test1").innerHTML='Test1: OK'
+	document.getElementById("Test2").innerHTML='Test2: OK'
+	document.getElementById("Test3").innerHTML='Test3: OK'
+	document.getElementById("Test4").innerHTML='Test4: OK'
+	document.getElementById("Test5/").innerHTML='Test5: OK'
+	document.getElementById("Test6/\"Test6\"").innerHTML='Test6: OK'
+}
+</script>
+
+</head>
+
+<body onload=pass_tests()>
+	<div id="Test1">Test1: KO</div>
+	<div/id="Test2">Test2: KO</div>
+	<div/id="Test3"/>Test3: KO</div>
+	
+	<div/id=Test4>Test4: KO</div>
+	<div/id=Test5/>Test5: KO</div>
+	<div/id=Test6/"Test6">Test6: KO</div>
+	<div/id="Test6"/Test6>Test6: KO</div>
+</body>
+
+</html>
