@@ -5,8 +5,8 @@ include_directories("include")
 include_directories("src")
 include_directories("examples")
 
-set(CMAKE_CPP_FLAGS "-Wall")
-set(CMAKE_C_FLAGS "-Wall -Wextra")
+set(CMAKE_CPP_FLAGS "-g -Wall")
+set(CMAKE_C_FLAGS "-g -Wall -Wextra")
 
 add_library(saxxy SHARED
 include/saxxy.h

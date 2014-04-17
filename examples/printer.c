@@ -65,7 +65,8 @@ int main(int argc, char *argv[]) {
 	parser.data = mmap(NULL, parser.len, PROT_READ, MAP_PRIVATE, fileno(f), 0);
 	parser.token_handler = &token_printer;
 	saxxy_html_parse(&parser);
-	
+	saxxy_parser_clean(&parser);
+	fclose(f);
 	return 0;
 }
 

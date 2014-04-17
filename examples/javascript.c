@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
 	parser.token_handler = &script_handler;
 	parser.user_handle = &inside_script;
 	saxxy_html_parse(&parser);
-	
+	saxxy_parser_clean(&parser);
+	fclose(f);
 	return 0;
 }

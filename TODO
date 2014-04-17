@@ -1,3 +1,5 @@
 TODO:
-- handle multiple charset with iconv ? UTF16 and UTF32 at least
+- add a simple validation function
+- handle UTF16 & UTF32 without BOM
+- handle more charset based on BOM ?
 

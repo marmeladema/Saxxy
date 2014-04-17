@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
+
+#include <iconv.h>
 
 static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 	size_t s = off;
@@ -204,12 +207,79 @@ size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
 	return off-s+1;
 }
 
-void saxxy_html_parse(saxxy_parser *parser) {
+bool saxxy_html_parse(saxxy_parser *parser) {
 	size_t s = 0, i = 0, l = 0;
 	saxxy_token text_token, token;
+	char *encoding = NULL, *from = NULL, *to = NULL, *to_orig = NULL;
+	size_t from_len, to_len, to_len_orig;
 	
 	if(!parser) {
-		return;
+		return false;
+	}
+	
+	if(parser->len > 4 && parser->data[0] == '\x00' && parser->data[1] == '\x00' && parser->data[2] == '\xFE' && parser->data[3] == '\xFF') {
+		encoding = "UTF32BE";
+		from = (char *)parser->data;
+		from_len = parser->len;
+		to_len = ROUNDUP_DIV(parser->len-2, 4)*6+3;
+		to_orig = to = calloc(to_len, sizeof(char));
+		if(!to) {
+			return false;
+		}
+	}
+	else if(parser->len > 4 && parser->data[0] == '\xFF' && parser->data[1] == '\xFE' && parser->data[2] == '\x00' && parser->data[3] == '\x00') {
+		encoding = "UTF32LE";
+		from = (char *)parser->data;
+		from_len = parser->len;
+		to_len = ROUNDUP_DIV(parser->len-2, 4)*6+3;
+		to_orig = to = calloc(to_len, sizeof(char));
+		if(!to) {
+			return false;
+		}
+	}
+	else if(parser->len > 2 && parser->data[0] == '\xFE' && parser->data[1] == '\xFF') {
+		encoding = "UTF16BE";
+		from = (char *)parser->data;
+		from_len = parser->len;
+		to_len = ROUNDUP_DIV(parser->len-2, 2)*6+3;
+		to_orig = to = calloc(to_len, sizeof(char));
+		if(!to) {
+			return false;
+		}
+	}
+	else if(parser->len > 2 && parser->data[0] == '\xFF' && parser->data[1] == '\xFE') {
+		encoding = "UTF16LE";
+		from = (char *)parser->data;
+		from_len = parser->len;
+		to_len_orig = to_len = ROUNDUP_DIV(parser->len-2, 2)*6+3;
+		to_orig = to = calloc(to_len, sizeof(char));
+		if(!to) {
+			return false;
+		}
+	}
+	
+	if(encoding) {
+		iconv_t cd = iconv_open("UTF8", encoding);
+		if(cd == (iconv_t) -1) {
+			free(to);
+			return false;
+		}
+		errno = 0;
+		if(iconv(cd, &from, &from_len, &to, &to_len) == (size_t) -1) {
+			perror("iconv");
+			free(to_orig);
+			return false;
+		}
+		iconv_close(cd);
+		
+		parser->data = to_orig;
+		parser->len = to_len_orig-to_len;
+		parser->converted = true;
+	}
+	
+	// Skip UTF-8 BOM
+	if(parser->len > 3 && parser->data[0] == '\xEF' && parser->data[1] == '\xBB' && parser->data[2] == '\xBF') {
+		s = i = 3;
 	}
 	
 	while(i < parser->len) {
@@ -273,4 +343,25 @@ void saxxy_html_parse(saxxy_parser *parser) {
 			parser->token_handler(&text_token, parser->user_handle);
 		}
 	}
+	
+	return true;
+}
+
+void saxxy_parser_clean(saxxy_parser *parser) {
+	if(!parser) {
+		return;
+	}
+	
+	if(parser->converted) {
+		free((void *)parser->data);
+		parser->data = NULL;
+		parser->len = 0;
+	}
+	
+	if(parser->current_tag.attributes.ptr) {
+		free(parser->current_tag.attributes.ptr);
+		parser->current_tag.attributes.ptr = NULL;
+	}
+	parser->current_tag.attributes.count = 0;
+	parser->current_tag.attributes.size = 0;
 }

@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <strings.h>
 
+#define ROUNDUP_DIV(x, y) (1 + (((x) - 1) / (y)))
+
 #define STRLEN_STATIC(s) 					(sizeof(s)-1)
 
 #define STRCMP_STATIC(s, s2) 				((STRLEN_STATIC(s) == (s2).len) && (strncmp((s), (s2).ptr, (s2).len) == 0))
@@ -85,6 +87,7 @@ typedef struct saxxy_parser {
 	void *user_handle;
 	const char *data;
 	size_t len;
+	bool converted;
 	
 	saxxy_tag current_tag;
 	saxxy_string current_comment;
@@ -92,6 +95,8 @@ typedef struct saxxy_parser {
 	saxxy_string raw_element;
 } saxxy_parser;
 
-void saxxy_html_parse(saxxy_parser *parser);
+bool saxxy_html_parse(saxxy_parser *parser);
+
+void saxxy_parser_clean(saxxy_parser *parser);
 
 #endif
