@@ -7,9 +7,35 @@
 
 #include <iconv.h>
 
+static bool saxxy_attribute_store(saxxy_parser *parser, saxxy_attribute attribute) {
+	if(!attribute.name.ptr && !attribute.value.ptr) {
+		return true;
+	}
+
+	if(parser->current_tag.attributes.count >= parser->current_tag.attributes.size) {
+		if(parser->current_tag.attributes.size == 0) {
+			parser->current_tag.attributes.size = 4;
+		} else {
+			parser->current_tag.attributes.size *= 2;
+		}
+		void *tmp = realloc(parser->current_tag.attributes.ptr, sizeof(saxxy_attribute) * parser->current_tag.attributes.size);
+		if(!tmp) {
+			return false;
+		}
+		parser->current_tag.attributes.ptr = (saxxy_attribute *)tmp;
+	}
+	// memset(parser->current_tag.attributes.ptr + parser->current_tag.attributes.count, 0, sizeof(saxxy_attribute));
+	parser->current_tag.attributes.count++;
+	parser->current_tag.attributes.ptr[parser->current_tag.attributes.count-1] = attribute;
+
+	return true;
+}
+
 static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 	size_t s = off;
 	parser->current_tag.attributes.count = 0;
+	saxxy_attribute attribute;
+
 	while(off < parser->len && parser->data[off] != '>') {
 		while(isspace(parser->data[off]) || parser->data[off] == '/') {
 			off++;
@@ -17,91 +43,73 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 				return off-s;
 			}
 		}
-		saxxy_string name;
-		name.ptr = parser->data+off;
-		name.len = 0;
+
+		memset(&attribute, 0, sizeof(attribute));
+
+		attribute.name.ptr = parser->data+off;
 		while(!isspace(parser->data[off]) && parser->data[off] != '=') {
 			off++;
-			name.len++;
+			attribute.name.len++;
 			if(off >= parser->len || parser->data[off] == '>') {
+				saxxy_attribute_store(parser, attribute);
 				return off-s;
 			}
 		}
-		
-		if(parser->current_tag.attributes.count >= parser->current_tag.attributes.size) {
-			if(parser->current_tag.attributes.size == 0) {
-				parser->current_tag.attributes.size = 4;
-			} else {
-				parser->current_tag.attributes.size *= 2;
-			}
-			void *tmp = realloc(parser->current_tag.attributes.ptr, sizeof(saxxy_attribute) * parser->current_tag.attributes.size);
-			if(!tmp) {
-				perror("realloc");
-				exit(1);
-			}
-			parser->current_tag.attributes.ptr = (saxxy_attribute *)tmp;
-		}
-		memset(parser->current_tag.attributes.ptr + parser->current_tag.attributes.count, 0, sizeof(saxxy_attribute));
-		parser->current_tag.attributes.count++;
-		parser->current_tag.attributes.ptr[parser->current_tag.attributes.count-1].name = name;
-		// fwrite("name: ", strlen("name: "), 1, stdout);
-		// fwrite(name.ptr, name.len, 1, stdout);
-		// fwrite("\n", 1, 1, stdout);
-		
-		while(parser->data[off] == ' ' || parser->data[off] == '\t' || parser->data[off] == '\r' || parser->data[off] == '\n') {
+
+		while(isspace(parser->data[off])) {
 			off++;
 			if(off >= parser->len || parser->data[off] == '>') {
+				saxxy_attribute_store(parser, attribute);
 				return off-s;
 			}
 		}
-		
+
 		if(off+1 < parser->len && parser->data[off] == '=') {
 			off++;
-			saxxy_string value;
-			value.len = 0;
-			while(parser->data[off] == ' ' || parser->data[off] == '\t' || parser->data[off] == '\r' || parser->data[off] == '\n') {
+
+			while(isspace(parser->data[off])) {
 				off++;
 				if(off >= parser->len || parser->data[off] == '>') {
+					saxxy_attribute_store(parser, attribute);
 					return off-s;
 				}
 			}
-			
+
 			if(off+1 < parser->len && parser->data[off] == '\'') {
 				off++;
-				value.ptr = parser->data+off;
+				attribute.value.ptr = parser->data+off;
 				char *c = memchr(parser->data+off, '\'', parser->len-off);
 				if(c) {
-					value.len = c - (parser->data+off);
+					attribute.value.len = c - (parser->data+off);
 					off++;
 				} else {
-					value.len = parser->len - off;
+					attribute.value.len = parser->len - off;
 				}
-				off += value.len;
+				off += attribute.value.len;
 			} else
 			if(off+1 < parser->len && parser->data[off] == '"') {
 				off++;
-				value.ptr = parser->data+off;
+				attribute.value.ptr = parser->data+off;
 				char *c = memchr(parser->data+off, '"', parser->len-off);
 				if(c) {
-					value.len = c - (parser->data+off);
+					attribute.value.len = c - (parser->data+off);
 					off++;
 				} else {
-					value.len = parser->len - off;
+					attribute.value.len = parser->len - off;
 				}
-				off += value.len;
+				off += attribute.value.len;
 			} else {
-				value.ptr = parser->data+off;
-				while(parser->data[off] != ' ' && parser->data[off] != '\t' && parser->data[off] != '\r' && parser->data[off] != '\n') {
+				attribute.value.ptr = parser->data+off;
+				while(!isspace(parser->data[off])) {
 					off++;
-					value.len++;
+					attribute.value.len++;
 					if(off >= parser->len || parser->data[off] == '>') {
 						break;
 					}
 				}
 			}
-			parser->current_tag.attributes.ptr[parser->current_tag.attributes.count-1].value = value;
-			parser->current_tag.attributes.ptr[parser->current_tag.attributes.count-1].value = value;
 		}
+		saxxy_attribute_store(parser, attribute);
 	}
 	return off-s;
 }
@@ -111,11 +119,11 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 		return 0;
 	}
 	size_t s = off, l;
-	
+
 	off++;
 #if 0
 	if(parser->data[off] == '?') {
-		
+
 	}
 	else
 
@@ -139,21 +147,21 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 			}
 		}
 		parser->current_tag.name.len = (parser->data+off)-parser->current_tag.name.ptr;
-		
+
 		l = saxxy_attribute_parse(parser, off);
 		if(off + l >= parser->len) {
 			return 0;
 			// return parser->len - s;
 		}
 		off += l;
-		
+
 		while(parser->data[off] != '>') {
 			off++;
 			if(off >= parser->len) {
 				return parser->len-s;
 			}
 		}
-		
+
 		if(parser->data[off - 1] == '/') {
 			parser->current_tag.self_closing = true;
 		} else {
@@ -173,13 +181,13 @@ size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
 	}
 	size_t s = off;
 	off += 2;
-	
+
 	bool normal_mode = false;
 	if(off+1 < parser->len && parser->data[off] == '-' && parser->data[off+1] == '-') {
 		normal_mode = true;
 		off += 2;
 	}
-	
+
 	parser->current_comment.ptr = parser->data+off;
 	parser->current_comment.len = 0;
 	if(normal_mode) {
@@ -202,8 +210,8 @@ size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
 		}
 		parser->current_comment.len = off-s-2;
 	}
-	
-	
+
+
 	return off-s+1;
 }
 
@@ -212,11 +220,11 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 	saxxy_token text_token, token;
 	char *encoding = NULL, *from = NULL, *to = NULL, *to_orig = NULL;
 	size_t from_len, to_len, to_len_orig;
-	
+
 	if(!parser) {
 		return false;
 	}
-	
+
 	if(parser->len > 4 && parser->data[0] == '\x00' && parser->data[1] == '\x00' && parser->data[2] == '\xFE' && parser->data[3] == '\xFF') {
 		encoding = "UTF32BE";
 		from = (char *)parser->data;
@@ -257,7 +265,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 			return false;
 		}
 	}
-	
+
 	if(encoding) {
 		iconv_t cd = iconv_open("UTF8", encoding);
 		if(cd == (iconv_t) -1) {
@@ -271,17 +279,17 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 			return false;
 		}
 		iconv_close(cd);
-		
+
 		parser->data = to_orig;
 		parser->len = to_len_orig-to_len;
 		parser->converted = true;
 	}
-	
+
 	// Skip UTF-8 BOM
 	if(parser->len > 3 && parser->data[0] == '\xEF' && parser->data[1] == '\xBB' && parser->data[2] == '\xBF') {
 		s = i = 3;
 	}
-	
+
 	while(i < parser->len) {
 		while(parser->data[i] != '<') {
 			i++;
@@ -302,7 +310,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 			token.type = SAXXY_TOKEN_TAG;
 			token.data.tag = parser->current_tag;
 		}
-		// printf("l: %lu\n", l);
+
 		if(l > 0 && parser->inside_raw_element) {
 			if(!TOKEN_TAG_CLOSE_MATCH(parser->raw_element, token)) {
 				l = 0;
@@ -323,18 +331,17 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 				parser->inside_raw_element = true;
 				parser->raw_element = token.data.tag.name;
 			}
-			
+
 			if(parser->token_handler) {
 				parser->token_handler(&token, parser->user_handle);
 			}
 			i += l;
 			s = i;
-			// printf("s: %lu, %c\n", s, parser->data[s]);
 		} else {
 			i++;
 		}
 	}
-	
+
 	if(parser->len > s) {
 		text_token.type = SAXXY_TOKEN_TEXT;
 		text_token.data.text.ptr = parser->data + s;
@@ -343,7 +350,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 			parser->token_handler(&text_token, parser->user_handle);
 		}
 	}
-	
+
 	return true;
 }
 
@@ -351,13 +358,13 @@ void saxxy_parser_clean(saxxy_parser *parser) {
 	if(!parser) {
 		return;
 	}
-	
+
 	if(parser->converted) {
 		free((void *)parser->data);
-		parser->data = NULL;
-		parser->len = 0;
 	}
-	
+	parser->data = NULL;
+	parser->len = 0;
+
 	if(parser->current_tag.attributes.ptr) {
 		free(parser->current_tag.attributes.ptr);
 		parser->current_tag.attributes.ptr = NULL;
