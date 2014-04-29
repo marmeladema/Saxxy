@@ -176,18 +176,18 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 }
 
 size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
-	if(off+3 > parser->len || parser->data[off] != '<' || parser->data[off+1] != '!') {
+	if(off+3 > parser->len || parser->data[off] != '<' || (parser->data[off+1] != '!' && parser->data[off+1] != '?')) {
 		return 0;
 	}
 	size_t s = off;
-	off += 2;
+	off += 1;
 
 	bool normal_mode = false;
-	if(off+1 < parser->len && parser->data[off] == '-' && parser->data[off+1] == '-') {
+	if(off+2 < parser->len && parser->data[off] == '!' && parser->data[off+1] == '-' && parser->data[off+2] == '-') {
 		normal_mode = true;
 		off += 2;
 	}
-
+	off += 1;
 	parser->current_comment.ptr = parser->data+off;
 	parser->current_comment.len = 0;
 	if(normal_mode) {
@@ -209,8 +209,10 @@ size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
 			}
 		}
 		parser->current_comment.len = off-s-2;
+		if(parser->data[s+1] == '?' && parser->current_comment.ptr[parser->current_comment.len-1] == '?') {
+			parser->current_comment.len--;
+		}
 	}
-
 
 	return off-s+1;
 }
@@ -301,7 +303,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 			 break;
 		}
 		l = 0;
-		if(!parser->inside_raw_element && parser->data[i+1] == '!') {
+		if(!parser->inside_raw_element && (parser->data[i+1] == '!' || parser->data[i+1] == '?')) {
 			l = saxxy_comment_parse(parser, i);
 			token.type = SAXXY_TOKEN_COMMENT;
 			token.data.comment = parser->current_comment;

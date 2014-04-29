@@ -38,7 +38,7 @@ void token_printer(const saxxy_token *token, void __attribute__ ((unused)) *user
 		break;
 
 		case SAXXY_TOKEN_COMMENT:
-			fwrite("comment: ", strlen("comment: "), 1, stdout);
+			printf("comment(%lu): ", token->data.comment.len);
 			fwrite(token->data.comment.ptr, token->data.comment.len, 1, stdout);
 			fwrite("\n", 1, 1, stdout);
 		break;
