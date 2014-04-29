@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+a
+<?xml version="1.0" encoding="UTF-8">
+b
+<?xml version="1.0" encoding="UTF-8"-->
+c
+<?--xml version="1.0" encoding="UTF-8">
+d
+<!--xml version="1.0" encoding="UTF-8">
+e
+<!-- Edited by XMLSpy -->
+<note>
+	<to>Tove</to>
+	<from>Jani</from>
+	<heading>Reminder</heading>
+	<body>Don't forget me this weekend!</body>
+</note>
