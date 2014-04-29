@@ -5,33 +5,33 @@
 #include <stdbool.h>
 #include <strings.h>
 
-#define ROUNDUP_DIV(x, y) (1 + (((x) - 1) / (y)))
+#define SAXXY_ROUNDUP_DIV(x, y) (1 + (((x) - 1) / (y)))
 
-#define STRLEN_STATIC(s) 					(sizeof(s)-1)
+#define SAXXY_STRLEN_STATIC(s) 						(sizeof(s)-1)
 
-#define STRCMP_STATIC(s, s2) 				((STRLEN_STATIC(s) == (s2).len) && (strncmp((s), (s2).ptr, (s2).len) == 0))
-#define STRCMP(s, s2) 						(((s).len == (s2).len) && (strncmp((s).ptr, (s2).ptr, (s2).len) == 0))
+#define SAXXY_STRCMP_STATIC(s, s2) 					((SAXXY_STRLEN_STATIC(s) == (s2).len) && (strncmp((s), (s2).ptr, (s2).len) == 0))
+#define SAXXY_STRCMP(s, s2) 						(((s).len == (s2).len) && (strncmp((s).ptr, (s2).ptr, (s2).len) == 0))
 
-#define STRCASECMP_STATIC(s, s2) 			((STRLEN_STATIC(s) == (s2).len) && (strncasecmp((s), (s2).ptr, (s2).len) == 0))
-#define STRCASECMP(s, s2) 					(((s).len == (s2).len) && (strncasecmp((s).ptr, (s2).ptr, (s2).len) == 0))
+#define SAXXY_STRCASECMP_STATIC(s, s2) 				((SAXXY_STRLEN_STATIC(s) == (s2).len) && (strncasecmp((s), (s2).ptr, (s2).len) == 0))
+#define SAXXY_STRCASECMP(s, s2) 					(((s).len == (s2).len) && (strncasecmp((s).ptr, (s2).ptr, (s2).len) == 0))
 
-#define TAG_MATCH_STATIC(s, t) 				(STRCASECMP_STATIC(s, (t).name))
-#define TAG_MATCH(s, t) 					(STRCASECMP(s, (t).name))
+#define SAXXY_TAG_MATCH_STATIC(s, t) 				(SAXXY_STRCASECMP_STATIC(s, (t).name))
+#define SAXXY_TAG_MATCH(s, t) 						(SAXXY_STRCASECMP(s, (t).name))
 
-#define TAG_OPEN_MATCH_STATIC(s, t) 		((t).type == SAXXY_TAG_OPEN && (TAG_MATCH_STATIC(s, (t))))
-#define TAG_OPEN_MATCH(s, t) 				((t).type == SAXXY_TAG_OPEN && (TAG_MATCH(s, (t))))
+#define SAXXY_TAG_OPEN_MATCH_STATIC(s, t) 			((t).type == SAXXY_TAG_OPEN && (SAXXY_TAG_MATCH_STATIC(s, (t))))
+#define SAXXY_TAG_OPEN_MATCH(s, t) 					((t).type == SAXXY_TAG_OPEN && (SAXXY_TAG_MATCH(s, (t))))
 
-#define TAG_CLOSE_MATCH_STATIC(s, t) 		((t).type == SAXXY_TAG_CLOSE && (TAG_MATCH_STATIC(s, (t))))
-#define TAG_CLOSE_MATCH(s, t) 				((t).type == SAXXY_TAG_CLOSE && (TAG_MATCH(s, (t))))
+#define SAXXY_TAG_CLOSE_MATCH_STATIC(s, t) 			((t).type == SAXXY_TAG_CLOSE && (SAXXY_TAG_MATCH_STATIC(s, (t))))
+#define SAXXY_TAG_CLOSE_MATCH(s, t) 				((t).type == SAXXY_TAG_CLOSE && (SAXXY_TAG_MATCH(s, (t))))
 
-#define TOKEN_TAG_MATCH_STATIC(s, t) 		((t).type == SAXXY_TOKEN_TAG && (TAG_MATCH_STATIC(s, (t).data.tag)))
-#define TOKEN_TAG_MATCH(s, t) 				((t).type == SAXXY_TOKEN_TAG && (TAG_MATCH(s, (t).data.tag)))
+#define SAXXY_TOKEN_TAG_MATCH_STATIC(s, t) 			((t).type == SAXXY_TOKEN_TAG && (SAXXY_TAG_MATCH_STATIC(s, (t).data.tag)))
+#define SAXXY_TOKEN_TAG_MATCH(s, t) 				((t).type == SAXXY_TOKEN_TAG && (SAXXY_TAG_MATCH(s, (t).data.tag)))
 
-#define TOKEN_TAG_OPEN_MATCH_STATIC(s, t) 	((t).type == SAXXY_TOKEN_TAG && (TAG_OPEN_MATCH_STATIC(s, (t).data.tag)))
-#define TOKEN_TAG_OPEN_MATCH(s, t)		 	((t).type == SAXXY_TOKEN_TAG && (TAG_OPEN_MATCH(s, (t).data.tag)))
+#define SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC(s, t) 	((t).type == SAXXY_TOKEN_TAG && (SAXXY_TAG_OPEN_MATCH_STATIC(s, (t).data.tag)))
+#define SAXXY_TOKEN_TAG_OPEN_MATCH(s, t)		 	((t).type == SAXXY_TOKEN_TAG && (SAXXY_TAG_OPEN_MATCH(s, (t).data.tag)))
 
-#define TOKEN_TAG_CLOSE_MATCH_STATIC(s, t) 	((t).type == SAXXY_TOKEN_TAG && (TAG_CLOSE_MATCH_STATIC(s, (t).data.tag)))
-#define TOKEN_TAG_CLOSE_MATCH(s, t) 		((t).type == SAXXY_TOKEN_TAG && (TAG_CLOSE_MATCH(s, (t).data.tag)))
+#define SAXXY_TOKEN_TAG_CLOSE_MATCH_STATIC(s, t) 	((t).type == SAXXY_TOKEN_TAG && (SAXXY_TAG_CLOSE_MATCH_STATIC(s, (t).data.tag)))
+#define SAXXY_TOKEN_TAG_CLOSE_MATCH(s, t) 			((t).type == SAXXY_TOKEN_TAG && (SAXXY_TAG_CLOSE_MATCH(s, (t).data.tag)))
 
 typedef struct saxxy_string {
 	const char *ptr;

@@ -25,8 +25,8 @@ static bool saxxy_attribute_store(saxxy_parser *parser, saxxy_attribute attribut
 		parser->current_tag.attributes.ptr = (saxxy_attribute *)tmp;
 	}
 	// memset(parser->current_tag.attributes.ptr + parser->current_tag.attributes.count, 0, sizeof(saxxy_attribute));
+	parser->current_tag.attributes.ptr[parser->current_tag.attributes.count] = attribute;
 	parser->current_tag.attributes.count++;
-	parser->current_tag.attributes.ptr[parser->current_tag.attributes.count-1] = attribute;
 
 	return true;
 }
@@ -229,7 +229,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF32BE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len = ROUNDUP_DIV(parser->len-2, 4)*6+3;
+		to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
@@ -239,7 +239,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF32LE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len = ROUNDUP_DIV(parser->len-2, 4)*6+3;
+		to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
@@ -249,7 +249,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF16BE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len = ROUNDUP_DIV(parser->len-2, 2)*6+3;
+		to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 2)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
@@ -259,7 +259,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF16LE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len_orig = to_len = ROUNDUP_DIV(parser->len-2, 2)*6+3;
+		to_len_orig = to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 2)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
@@ -312,7 +312,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		}
 
 		if(l > 0 && parser->inside_raw_element) {
-			if(!TOKEN_TAG_CLOSE_MATCH(parser->raw_element, token)) {
+			if(!SAXXY_TOKEN_TAG_CLOSE_MATCH(parser->raw_element, token)) {
 				l = 0;
 			} else {
 				parser->inside_raw_element = false;
@@ -327,7 +327,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 					parser->token_handler(&text_token, parser->user_handle);
 				}
 			}
-			if(TOKEN_TAG_OPEN_MATCH_STATIC("script", token) || TOKEN_TAG_OPEN_MATCH_STATIC("style", token)) {
+			if(SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("script", token) || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("style", token)) {
 				parser->inside_raw_element = true;
 				parser->raw_element = token.data.tag.name;
 			}
