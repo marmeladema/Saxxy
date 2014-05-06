@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <strings.h>
 
-#define SAXXY_ROUNDUP_DIV(x, y) (1 + (((x) - 1) / (y)))
+#define SAXXY_ROUNDUP_DIV(x, y) 					(1 + (((x) - 1) / (y)))
 
 #define SAXXY_STRLEN_STATIC(s) 						(sizeof(s)-1)
 
@@ -95,8 +95,14 @@ typedef struct saxxy_parser {
 	saxxy_string raw_element;
 } saxxy_parser;
 
-bool saxxy_html_parse(saxxy_parser *parser);
+bool saxxy_attribute_array_store(saxxy_attribute_array *attributes, saxxy_attribute attribute);
+void saxxy_attribute_array_clean(saxxy_attribute_array *attributes);
 
+size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off);
+size_t saxxy_comment_parse(saxxy_parser *parser, size_t off);
+bool saxxy_html_parse(saxxy_parser *parser);
 void saxxy_parser_clean(saxxy_parser *parser);
+
+void saxxy_style_parse(saxxy_attribute_array *attributes, saxxy_string style);
 
 #endif

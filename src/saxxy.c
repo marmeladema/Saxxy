@@ -7,31 +7,47 @@
 
 #include <iconv.h>
 
-static bool saxxy_attribute_store(saxxy_parser *parser, saxxy_attribute attribute) {
+bool saxxy_attribute_array_store(saxxy_attribute_array *attributes, saxxy_attribute attribute) {
 	if(!attribute.name.ptr && !attribute.value.ptr) {
 		return true;
 	}
 
-	if(parser->current_tag.attributes.count >= parser->current_tag.attributes.size) {
-		if(parser->current_tag.attributes.size == 0) {
-			parser->current_tag.attributes.size = 4;
-		} else {
-			parser->current_tag.attributes.size *= 2;
+	if(attributes->count >= attributes->size) {
+		while(attributes->count >= attributes->size) {
+			if(attributes->size == 0) {
+				attributes->size = 4;
+			} else {
+				attributes->size *= 2;
+			}
 		}
-		void *tmp = realloc(parser->current_tag.attributes.ptr, sizeof(saxxy_attribute) * parser->current_tag.attributes.size);
+		void *tmp = realloc(attributes->ptr, sizeof(saxxy_attribute) * attributes->size);
 		if(!tmp) {
 			return false;
 		}
-		parser->current_tag.attributes.ptr = (saxxy_attribute *)tmp;
+		attributes->ptr = (saxxy_attribute *)tmp;
+		memset(attributes->ptr + attributes->count, 0, sizeof(saxxy_attribute) * (attributes->size - attributes->count));
 	}
-	// memset(parser->current_tag.attributes.ptr + parser->current_tag.attributes.count, 0, sizeof(saxxy_attribute));
-	parser->current_tag.attributes.ptr[parser->current_tag.attributes.count] = attribute;
-	parser->current_tag.attributes.count++;
+	
+	attributes->ptr[attributes->count] = attribute;
+	attributes->count++;
 
 	return true;
 }
 
-static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
+void saxxy_attribute_array_clean(saxxy_attribute_array *attributes) {
+	if(!attributes) {
+		return;
+	}
+	
+	if(attributes->ptr) {
+		free(attributes->ptr);
+		attributes->ptr = NULL;
+	}
+	attributes->count = 0;
+	attributes->size = 0;
+}
+
+size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 	size_t s = off;
 	parser->current_tag.attributes.count = 0;
 	saxxy_attribute attribute;
@@ -51,7 +67,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 			off++;
 			attribute.name.len++;
 			if(off >= parser->len || parser->data[off] == '>') {
-				saxxy_attribute_store(parser, attribute);
+				saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
 				return off-s;
 			}
 		}
@@ -59,7 +75,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 		while(isspace(parser->data[off])) {
 			off++;
 			if(off >= parser->len || parser->data[off] == '>') {
-				saxxy_attribute_store(parser, attribute);
+				saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
 				return off-s;
 			}
 		}
@@ -70,7 +86,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 			while(isspace(parser->data[off])) {
 				off++;
 				if(off >= parser->len || parser->data[off] == '>') {
-					saxxy_attribute_store(parser, attribute);
+					saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
 					return off-s;
 				}
 			}
@@ -109,7 +125,7 @@ static size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 				}
 			}
 		}
-		saxxy_attribute_store(parser, attribute);
+		saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
 	}
 	return off-s;
 }
@@ -121,14 +137,7 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 	size_t s = off, l;
 
 	off++;
-#if 0
-	if(parser->data[off] == '?') {
 
-	}
-	else
-
-	else
-#endif
 	parser->current_tag.type = SAXXY_TAG_OPEN;
 	parser->current_tag.name.ptr = parser->data + off;
 	if(parser->data[off] == '/') {
@@ -367,10 +376,68 @@ void saxxy_parser_clean(saxxy_parser *parser) {
 	parser->data = NULL;
 	parser->len = 0;
 
-	if(parser->current_tag.attributes.ptr) {
-		free(parser->current_tag.attributes.ptr);
-		parser->current_tag.attributes.ptr = NULL;
+	saxxy_attribute_array_clean(&parser->current_tag.attributes);
+}
+
+void saxxy_style_parse(saxxy_attribute_array *attributes, saxxy_string style) {
+	size_t off = 0;
+	saxxy_attribute attribute;
+	while(off < style.len) {
+		while(isspace(style.ptr[off])) {
+			off++;
+			if(off >= style.len) {
+				return;
+			}
+		}
+		
+		memset(&attribute, 0, sizeof(attribute));
+		attribute.name.ptr = style.ptr+off;
+		while(!isspace(style.ptr[off]) && style.ptr[off] != ':' && style.ptr[off] != ';') {
+			off++;
+			attribute.name.len++;
+			if(off >= style.len) {
+				saxxy_attribute_array_store(attributes, attribute);
+				return;
+			}
+		}
+		
+		while(isspace(style.ptr[off])) {
+			off++;
+			if(off >= style.len) {
+				saxxy_attribute_array_store(attributes, attribute);
+				return;
+			}
+		}
+
+		if(off+1 < style.len && style.ptr[off] == ':') {
+			off++;
+
+			while(isspace(style.ptr[off])) {
+				off++;
+				if(off >= style.len) {
+					saxxy_attribute_array_store(attributes, attribute);
+					return;
+				}
+			}
+
+			attribute.value.ptr = style.ptr+off;
+			while(style.ptr[off] != ';') {
+				off++;
+				attribute.value.len++;
+				if(off >= style.len) {
+					saxxy_attribute_array_store(attributes, attribute);
+					return;
+				}
+			}
+		}
+
+		saxxy_attribute_array_store(attributes, attribute);
+
+		while(style.ptr[off] == ';') {
+			off++;
+			if(off >= style.len) {
+				return;
+			}
+		}
 	}
-	parser->current_tag.attributes.count = 0;
-	parser->current_tag.attributes.size = 0;
 }
