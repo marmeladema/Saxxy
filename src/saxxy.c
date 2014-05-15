@@ -240,7 +240,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF32BE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
+		to_len_orig = to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
@@ -250,7 +250,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF32LE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
+		to_len_orig = to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
@@ -260,7 +260,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF16BE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 2)*6+3;
+		to_len_orig = to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 2)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
