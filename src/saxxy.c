@@ -80,8 +80,13 @@ size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 			}
 		}
 
-		if(off+1 < parser->len && parser->data[off] == '=') {
+		if(off < parser->len && parser->data[off] == '=') {
 			off++;
+			
+			if(off >= parser->len || parser->data[off] == '>') {
+				saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
+				return off-s;
+			}
 
 			while(isspace(parser->data[off])) {
 				off++;
