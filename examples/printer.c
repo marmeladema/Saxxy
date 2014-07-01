@@ -5,7 +5,7 @@
 #include <sys/mman.h>
 
 void token_printer(const saxxy_token *token, void __attribute__ ((unused)) *user_handle) {
-	size_t i;
+	size_t i, j;
 	switch(token->type) {
 		case SAXXY_TOKEN_TAG:
 			if(token->data.tag.type == SAXXY_TAG_OPEN) {
@@ -22,11 +22,29 @@ void token_printer(const saxxy_token *token, void __attribute__ ((unused)) *user
 					fwrite(token->data.tag.attributes.ptr[i].name.ptr, token->data.tag.attributes.ptr[i].name.len, 1, stdout);
 					fwrite("\n", strlen("\n"), 1, stdout);
 				}
-
+				
 				if(token->data.tag.attributes.ptr[i].value.ptr) {
-					printf("\tattribute_value(%lu): ", token->data.tag.attributes.ptr[i].value.len);
-					fwrite(token->data.tag.attributes.ptr[i].value.ptr, token->data.tag.attributes.ptr[i].value.len, 1, stdout);
-					fwrite("\n", strlen("\n"), 1, stdout);
+					if(SAXXY_STRCASECMP_STATIC("style", token->data.tag.attributes.ptr[i].name) && token->data.tag.attributes.ptr[i].value.ptr) {
+						saxxy_attribute_array style_attributes;
+						memset(&style_attributes, 0, sizeof(style_attributes));
+						saxxy_style_parse(&style_attributes, token->data.tag.attributes.ptr[i].value);
+						for(j = 0; j < style_attributes.count; j++) {
+							if(style_attributes.ptr[j].name.ptr) {
+								printf("\t\tstyle_name(%lu): ", style_attributes.ptr[j].name.len);
+								fwrite(style_attributes.ptr[j].name.ptr, style_attributes.ptr[j].name.len, 1, stdout);
+								fwrite("\n", strlen("\n"), 1, stdout);
+							}
+							if(style_attributes.ptr[j].value.ptr) {
+								printf("\t\tstyle_value(%lu): ", style_attributes.ptr[j].value.len);
+								fwrite(style_attributes.ptr[j].value.ptr, style_attributes.ptr[j].value.len, 1, stdout);
+								fwrite("\n", strlen("\n"), 1, stdout);
+							}
+						}
+					} else {
+						printf("\tattribute_value(%lu): ", token->data.tag.attributes.ptr[i].value.len);
+						fwrite(token->data.tag.attributes.ptr[i].value.ptr, token->data.tag.attributes.ptr[i].value.len, 1, stdout);
+						fwrite("\n", strlen("\n"), 1, stdout);
+					}
 				}
 			}
 		break;

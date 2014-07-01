@@ -414,8 +414,13 @@ void saxxy_style_parse(saxxy_attribute_array *attributes, saxxy_string style) {
 			}
 		}
 
-		if(off+1 < style.len && style.ptr[off] == ':') {
+		if(off < style.len && style.ptr[off] == ':') {
 			off++;
+			
+			if(off >= style.len) {
+				saxxy_attribute_array_store(attributes, attribute);
+				return;
+			}
 
 			while(isspace(style.ptr[off])) {
 				off++;
