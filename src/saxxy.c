@@ -80,8 +80,13 @@ size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 			}
 		}
 
-		if(off+1 < parser->len && parser->data[off] == '=') {
+		if(off < parser->len && parser->data[off] == '=') {
 			off++;
+			
+			if(off >= parser->len || parser->data[off] == '>') {
+				saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
+				return off-s;
+			}
 
 			while(isspace(parser->data[off])) {
 				off++;
@@ -240,7 +245,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF32BE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
+		to_len_orig = to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
@@ -250,7 +255,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF32LE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
+		to_len_orig = to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 4)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
@@ -260,7 +265,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 		encoding = "UTF16BE";
 		from = (char *)parser->data;
 		from_len = parser->len;
-		to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 2)*6+3;
+		to_len_orig = to_len = SAXXY_ROUNDUP_DIV(parser->len-2, 2)*6+3;
 		to_orig = to = calloc(to_len, sizeof(char));
 		if(!to) {
 			return false;
@@ -409,8 +414,13 @@ void saxxy_style_parse(saxxy_attribute_array *attributes, saxxy_string style) {
 			}
 		}
 
-		if(off+1 < style.len && style.ptr[off] == ':') {
+		if(off < style.len && style.ptr[off] == ':') {
 			off++;
+			
+			if(off >= style.len) {
+				saxxy_attribute_array_store(attributes, attribute);
+				return;
+			}
 
 			while(isspace(style.ptr[off])) {
 				off++;
