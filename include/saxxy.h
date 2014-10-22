@@ -9,11 +9,11 @@
 
 #define SAXXY_STRLEN_STATIC(s) 						(sizeof(s)-1)
 
-#define SAXXY_STRCMP_STATIC(s, s2) 					((SAXXY_STRLEN_STATIC(s) == (s2).len) && (strncmp((s), (s2).ptr, (s2).len) == 0))
-#define SAXXY_STRCMP(s, s2) 						(((s).len == (s2).len) && (strncmp((s).ptr, (s2).ptr, (s2).len) == 0))
+#define SAXXY_STRCMP_STATIC(s, s2) 					((s2).ptr && (SAXXY_STRLEN_STATIC(s) == (s2).len) && (strncmp((s), (s2).ptr, (s2).len) == 0))
+#define SAXXY_STRCMP(s, s2) 						((s).ptr && (s2).ptr && ((s).len == (s2).len) && (strncmp((s).ptr, (s2).ptr, (s2).len) == 0))
 
-#define SAXXY_STRCASECMP_STATIC(s, s2) 				((SAXXY_STRLEN_STATIC(s) == (s2).len) && (strncasecmp((s), (s2).ptr, (s2).len) == 0))
-#define SAXXY_STRCASECMP(s, s2) 					(((s).len == (s2).len) && (strncasecmp((s).ptr, (s2).ptr, (s2).len) == 0))
+#define SAXXY_STRCASECMP_STATIC(s, s2) 				((s2).ptr && (SAXXY_STRLEN_STATIC(s) == (s2).len) && (strncasecmp((s), (s2).ptr, (s2).len) == 0))
+#define SAXXY_STRCASECMP(s, s2) 					((s).ptr && (s2).ptr && ((s).len == (s2).len) && (strncasecmp((s).ptr, (s2).ptr, (s2).len) == 0))
 
 #define SAXXY_TAG_MATCH_STATIC(s, t) 				(SAXXY_STRCASECMP_STATIC(s, (t).name))
 #define SAXXY_TAG_MATCH(s, t) 						(SAXXY_STRCASECMP(s, (t).name))
