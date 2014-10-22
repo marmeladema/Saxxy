@@ -343,7 +343,9 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 					parser->token_handler(&text_token, parser->user_handle);
 				}
 			}
-			if(SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("script", token) || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("style", token)) {
+			if(SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("title", token)
+			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("script", token)
+			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("style", token)) {
 				parser->inside_raw_element = true;
 				parser->raw_element = token.data.tag.name;
 			}
