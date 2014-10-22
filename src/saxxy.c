@@ -344,6 +344,7 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 				}
 			}
 			if(SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("title", token)
+			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("textarea", token)
 			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("script", token)
 			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("style", token)) {
 				parser->inside_raw_element = true;
