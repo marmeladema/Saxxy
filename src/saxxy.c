@@ -27,7 +27,7 @@ bool saxxy_attribute_array_store(saxxy_attribute_array *attributes, saxxy_attrib
 		attributes->ptr = (saxxy_attribute *)tmp;
 		memset(attributes->ptr + attributes->count, 0, sizeof(saxxy_attribute) * (attributes->size - attributes->count));
 	}
-	
+
 	attributes->ptr[attributes->count] = attribute;
 	attributes->count++;
 
@@ -38,7 +38,7 @@ void saxxy_attribute_array_clean(saxxy_attribute_array *attributes) {
 	if(!attributes) {
 		return;
 	}
-	
+
 	if(attributes->ptr) {
 		free(attributes->ptr);
 		attributes->ptr = NULL;
@@ -47,10 +47,11 @@ void saxxy_attribute_array_clean(saxxy_attribute_array *attributes) {
 	attributes->size = 0;
 }
 
-size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
+size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off, saxxy_attribute_array *attributes) {
 	size_t s = off;
-	parser->current_tag.attributes.count = 0;
 	saxxy_attribute attribute;
+
+	attributes->count = 0;
 
 	while(off < parser->len && parser->data[off] != '>') {
 		while(isspace(parser->data[off]) || parser->data[off] == '/') {
@@ -67,7 +68,7 @@ size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 			off++;
 			attribute.name.len++;
 			if(off >= parser->len || parser->data[off] == '>') {
-				saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
+				saxxy_attribute_array_store(attributes, attribute);
 				return off-s;
 			}
 		}
@@ -75,23 +76,23 @@ size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 		while(isspace(parser->data[off])) {
 			off++;
 			if(off >= parser->len || parser->data[off] == '>') {
-				saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
+				saxxy_attribute_array_store(attributes, attribute);
 				return off-s;
 			}
 		}
 
 		if(off < parser->len && parser->data[off] == '=') {
 			off++;
-			
+
 			if(off >= parser->len || parser->data[off] == '>') {
-				saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
+				saxxy_attribute_array_store(attributes, attribute);
 				return off-s;
 			}
 
 			while(isspace(parser->data[off])) {
 				off++;
 				if(off >= parser->len || parser->data[off] == '>') {
-					saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
+					saxxy_attribute_array_store(attributes, attribute);
 					return off-s;
 				}
 			}
@@ -130,12 +131,12 @@ size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off) {
 				}
 			}
 		}
-		saxxy_attribute_array_store(&parser->current_tag.attributes, attribute);
+		saxxy_attribute_array_store(attributes, attribute);
 	}
 	return off-s;
 }
 
-size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
+size_t saxxy_tag_parse(saxxy_parser *parser, size_t off, saxxy_token *token) {
 	if(off+3 > parser->len || parser->data[off] != '<') {
 		return 0;
 	}
@@ -143,12 +144,12 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 
 	off++;
 
-	parser->current_tag.type = SAXXY_TAG_OPEN;
-	parser->current_tag.name.ptr = parser->data + off;
+	token->type = SAXXY_TOKEN_TAG_OPEN;
+	token->data.tag.name.ptr = parser->data + off;
 	if(parser->data[off] == '/') {
 		off++;
-		parser->current_tag.type = SAXXY_TAG_CLOSE;
-		parser->current_tag.name.ptr = parser->data + off;
+		token->type = SAXXY_TOKEN_TAG_CLOSE;
+		token->data.tag.name.ptr = parser->data + off;
 		if(off >= parser->len) {
 			return 0;
 		}
@@ -160,9 +161,9 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 				return 0;
 			}
 		}
-		parser->current_tag.name.len = (parser->data+off)-parser->current_tag.name.ptr;
+		token->data.tag.name.len = (parser->data+off)-token->data.tag.name.ptr;
 
-		l = saxxy_attribute_parse(parser, off);
+		l = saxxy_attribute_parse(parser, off, &(token->data.tag.attributes));
 		if(off + l >= parser->len) {
 			return 0;
 			// return parser->len - s;
@@ -177,9 +178,7 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 		}
 
 		if(parser->data[off - 1] == '/') {
-			parser->current_tag.self_closing = true;
-		} else {
-			parser->current_tag.self_closing = false;
+			token->type |= SAXXY_TOKEN_TAG_CLOSE;
 		}
 		return off-s+1;
 		if(parser->data[off] == '>') {
@@ -189,7 +188,7 @@ size_t saxxy_tag_parse(saxxy_parser *parser, size_t off) {
 	return 0;
 }
 
-size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
+size_t saxxy_comment_parse(saxxy_parser *parser, size_t off, saxxy_token *token) {
 	if(off+3 > parser->len || parser->data[off] != '<' || (parser->data[off+1] != '!' && parser->data[off+1] != '?')) {
 		return 0;
 	}
@@ -202,18 +201,20 @@ size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
 		off += 2;
 	}
 	off += 1;
-	parser->current_comment.ptr = parser->data+off;
-	parser->current_comment.len = 0;
+
+	token->type = SAXXY_TOKEN_COMMENT;
+	token->data.comment.ptr = parser->data+off;
+	token->data.comment.len = 0;
 	if(normal_mode) {
 		while(parser->data[off] != '>' || parser->data[off-1] != '-' || parser->data[off-2] != '-') {
 			off++;
-			parser->current_comment.len++;
+			token->data.comment.len++;
 			if(off >= parser->len) {
 				return 0;
 			}
 		}
 		if(off > s+4) {
-			parser->current_comment.len -= 2;
+			token->data.comment.len -= 2;
 		}
 	} else {
 		while(parser->data[off] != '>') {
@@ -222,9 +223,10 @@ size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
 				return 0;
 			}
 		}
-		parser->current_comment.len = off-s-2;
-		if(parser->data[s+1] == '?' && parser->current_comment.ptr[parser->current_comment.len-1] == '?') {
-			parser->current_comment.len--;
+
+		token->data.comment.len = off-s-2;
+		if(parser->data[s+1] == '?' && token->data.comment.ptr[token->data.comment.len-1] == '?') {
+			token->data.comment.len--;
 		}
 	}
 
@@ -233,13 +235,22 @@ size_t saxxy_comment_parse(saxxy_parser *parser, size_t off) {
 
 bool saxxy_html_parse(saxxy_parser *parser) {
 	size_t s = 0, i = 0, l = 0;
-	saxxy_token text_token, token;
+	saxxy_token tag, comment, text;
 	char *encoding = NULL, *from = NULL, *to = NULL, *to_orig = NULL;
 	size_t from_len, to_len, to_len_orig;
+	bool inside_raw_element = false;
+	saxxy_string raw_element;
 
 	if(!parser) {
 		return false;
 	}
+
+	memset(&tag, 0, sizeof(tag));
+	memset(&comment, 0, sizeof(comment));
+	memset(&text, 0, sizeof(text));
+	memset(&raw_element, 0, sizeof(raw_element));
+
+	tag.data.tag.attributes = parser->attributes;
 
 	if(parser->len > 4 && parser->data[0] == '\x00' && parser->data[1] == '\x00' && parser->data[2] == '\xFE' && parser->data[3] == '\xFF') {
 		encoding = "UTF32BE";
@@ -317,42 +328,39 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 			 break;
 		}
 		l = 0;
-		if(!parser->inside_raw_element && (parser->data[i+1] == '!' || parser->data[i+1] == '?')) {
-			l = saxxy_comment_parse(parser, i);
-			token.type = SAXXY_TOKEN_COMMENT;
-			token.data.comment = parser->current_comment;
+		if(!inside_raw_element && (parser->data[i+1] == '!' || parser->data[i+1] == '?')) {
+			l = saxxy_comment_parse(parser, i, &comment);
 		} else if(isalpha(parser->data[i+1]) != 0 || parser->data[i+1] == '/') {
-			l = saxxy_tag_parse(parser, i);
-			token.type = SAXXY_TOKEN_TAG;
-			token.data.tag = parser->current_tag;
+			l = saxxy_tag_parse(parser, i, &tag);
+			parser->attributes = tag.data.tag.attributes;
 		}
 
-		if(l > 0 && parser->inside_raw_element) {
-			if(!SAXXY_TOKEN_TAG_CLOSE_MATCH(parser->raw_element, token)) {
+		if(l > 0 && inside_raw_element) {
+			if(!SAXXY_TOKEN_TAG_CLOSE_MATCH(raw_element, tag)) {
 				l = 0;
 			} else {
-				parser->inside_raw_element = false;
+				inside_raw_element = false;
 			}
 		}
 		if(l > 0) {
 			if(i > s) {
-				text_token.type = SAXXY_TOKEN_TEXT;
-				text_token.data.text.ptr = parser->data + s;
-				text_token.data.text.len = i - s;
+				text.type = SAXXY_TOKEN_TEXT;
+				text.data.text.ptr = parser->data + s;
+				text.data.text.len = i - s;
 				if(parser->token_handler) {
-					parser->token_handler(&text_token, parser->user_handle);
+					parser->token_handler(&text, parser->user_handle);
 				}
 			}
-			if(SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("title", token)
-			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("textarea", token)
-			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("script", token)
-			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("style", token)) {
-				parser->inside_raw_element = true;
-				parser->raw_element = token.data.tag.name;
+			if(SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("title", tag)
+			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("textarea", tag)
+			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("script", tag)
+			   || SAXXY_TOKEN_TAG_OPEN_MATCH_STATIC("style", tag)) {
+				inside_raw_element = true;
+				raw_element = tag.data.tag.name;
 			}
 
 			if(parser->token_handler) {
-				parser->token_handler(&token, parser->user_handle);
+				parser->token_handler(&tag, parser->user_handle);
 			}
 			i += l;
 			s = i;
@@ -362,11 +370,11 @@ bool saxxy_html_parse(saxxy_parser *parser) {
 	}
 
 	if(parser->len > s) {
-		text_token.type = SAXXY_TOKEN_TEXT;
-		text_token.data.text.ptr = parser->data + s;
-		text_token.data.text.len = parser->len - s;
+		text.type = SAXXY_TOKEN_TEXT;
+		text.data.text.ptr = parser->data + s;
+		text.data.text.len = parser->len - s;
 		if(parser->token_handler) {
-			parser->token_handler(&text_token, parser->user_handle);
+			parser->token_handler(&text, parser->user_handle);
 		}
 	}
 
@@ -384,7 +392,7 @@ void saxxy_parser_clean(saxxy_parser *parser) {
 	parser->data = NULL;
 	parser->len = 0;
 
-	saxxy_attribute_array_clean(&parser->current_tag.attributes);
+	saxxy_attribute_array_clean(&(parser->attributes));
 }
 
 void saxxy_style_parse(saxxy_attribute_array *attributes, saxxy_string style) {
@@ -397,7 +405,7 @@ void saxxy_style_parse(saxxy_attribute_array *attributes, saxxy_string style) {
 				return;
 			}
 		}
-		
+
 		memset(&attribute, 0, sizeof(attribute));
 		attribute.name.ptr = style.ptr+off;
 		while(!isspace(style.ptr[off]) && style.ptr[off] != ':' && style.ptr[off] != ';') {
@@ -408,7 +416,7 @@ void saxxy_style_parse(saxxy_attribute_array *attributes, saxxy_string style) {
 				return;
 			}
 		}
-		
+
 		while(isspace(style.ptr[off])) {
 			off++;
 			if(off >= style.len) {
@@ -419,7 +427,7 @@ void saxxy_style_parse(saxxy_attribute_array *attributes, saxxy_string style) {
 
 		if(off < style.len && style.ptr[off] == ':') {
 			off++;
-			
+
 			if(off >= style.len) {
 				saxxy_attribute_array_store(attributes, attribute);
 				return;
