@@ -33,65 +33,83 @@
 #define SAXXY_TOKEN_TAG_CLOSE_MATCH_STATIC(s, t) 	(((t).type&SAXXY_TOKEN_TAG_CLOSE) && (SAXXY_TAG_MATCH_STATIC(s, (t).data.tag)))
 #define SAXXY_TOKEN_TAG_CLOSE_MATCH(s, t) 			(((t).type&SAXXY_TOKEN_TAG_CLOSE) && (SAXXY_TAG_MATCH(s, (t).data.tag)))
 
-typedef struct saxxy_string {
+typedef struct saxxy_string_s {
 	const char *ptr;
 	size_t len;
-} saxxy_string;
+} saxxy_string_t;
 
-typedef struct saxxy_attribute {
-	saxxy_string ns;
-	saxxy_string name;
-	saxxy_string value;
-} saxxy_attribute;
+typedef struct saxxy_attribute_s {
+	saxxy_string_t ns;
+	saxxy_string_t name;
+	saxxy_string_t value;
+} saxxy_attribute_t;
 
-typedef struct saxxy_attribute_array {
-	saxxy_attribute *ptr;
+typedef struct saxxy_attribute_array_s {
+	saxxy_attribute_t *ptr;
 	size_t count;
 	size_t size;
-} saxxy_attribute_array;
+} saxxy_attribute_array_t;
 
-typedef struct saxxy_tag {
-	saxxy_string ns;
-	saxxy_string name;
-	saxxy_attribute_array attributes;
-} saxxy_tag;
+typedef struct saxxy_tag_s {
+	saxxy_string_t ns;
+	saxxy_string_t name;
+	saxxy_attribute_array_t attributes;
+	bool empty;
+} saxxy_tag_t;
 
-typedef enum saxxy_token_type {
-	SAXXY_TOKEN_TAG_OPEN = 1,
-	SAXXY_TOKEN_TAG_CLOSE = 1<<1,
-	SAXXY_TOKEN_TAG_OPEN_CLOSE = (1 | 1<<1),
-	SAXXY_TOKEN_COMMENT = 1<<2,
-	SAXXY_TOKEN_TEXT = 1<<3,
-	SAXXY_TOKEN_EOF = 1<<4
-} saxxy_token_type;
+typedef enum saxxy_entity_type_e {
+	SAXXY_ENTITY_TYPE_NAME,
+	SAXXY_ENTITY_TYPE_DECIMAL,
+	SAXXY_ENTITY_TYPE_HEXADECIMAL,
+} saxxy_entity_type_t;
 
-typedef struct saxxy_token {
-	saxxy_token_type type;
+typedef struct saxxy_entity_s {
+	saxxy_entity_type_t type;
 	union {
-		saxxy_tag tag;
-		saxxy_string comment;
-		saxxy_string text;
-	} data;
-} saxxy_token;
+		saxxy_string_t name;
+		saxxy_string_t decimal;
+		saxxy_string_t hexadecimal;
+	};
+} saxxy_entity_t;
 
-typedef void (*saxxy_token_handler)(const saxxy_token *token, void __attribute__ ((unused)) *user_handle);
+typedef enum saxxy_token_type_e {
+	SAXXY_TOKEN_UNKNOWN = 0,
+	SAXXY_TOKEN_TAG_OPEN,
+	SAXXY_TOKEN_TAG_CLOSE,
+	SAXXY_TOKEN_COMMENT,
+	SAXXY_TOKEN_TEXT,
+	SAXXY_TOKEN_ENTITY,
+	SAXXY_TOKEN_EOF
+} saxxy_token_type_t;
 
-typedef struct saxxy_parser {
-	saxxy_token_handler token_handler;
-	void *user_handle;
-	const char *data;
-	size_t len;
-	bool converted;
+typedef union saxxy_token_data_u {
+	saxxy_tag_t tag;
+	saxxy_string_t comment;
+	saxxy_string_t text;
+	saxxy_entity_t entity;
+} saxxy_token_data_t ;
 
-	saxxy_attribute_array attributes;
-} saxxy_parser;
+typedef struct saxxy_token_s {
+	saxxy_token_data_t data;
+	saxxy_token_type_t type;
+} saxxy_token_t;
 
-size_t saxxy_attribute_parse(saxxy_parser *parser, size_t off, saxxy_attribute_array *attributes);
-void saxxy_attribute_array_clean(saxxy_attribute_array *attributes);
-size_t saxxy_comment_parse(saxxy_parser *parser, size_t off, saxxy_token *token);
-bool saxxy_html_parse(saxxy_parser *parser);
-void saxxy_parser_clean(saxxy_parser *parser);
+typedef bool (*saxxy_token_handler_t)(const saxxy_token_t *token, void *user_handle);
 
-void saxxy_style_parse(saxxy_attribute_array *attributes, saxxy_string style);
+typedef struct saxxy_parser_s saxxy_parser_t;
+
+size_t saxxy_attribute_parse(saxxy_parser_t *parser, size_t off, saxxy_attribute_array_t *attributes);
+void saxxy_attribute_array_clean(saxxy_attribute_array_t *attributes);
+size_t saxxy_comment_parse(saxxy_parser_t *parser, size_t off, saxxy_token_t *token);
+size_t saxxy_entity_parse(saxxy_parser_t *parser, size_t off, saxxy_token_t *token);
+bool saxxy_html_parse(saxxy_parser_t *parser);
+
+saxxy_parser_t *saxxy_parser_new();
+void saxxy_parser_init(saxxy_parser_t *parser, const char *data, size_t len);
+void saxxy_parser_set_token_handler(saxxy_parser_t *parser, saxxy_token_handler_t token_handler, void *user_handle);
+void saxxy_parser_clean(saxxy_parser_t *parser);
+void saxxy_parser_free(saxxy_parser_t *parser);
+
+void saxxy_style_parse(saxxy_attribute_array_t *attributes, saxxy_string_t style);
 
 #endif

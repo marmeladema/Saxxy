@@ -4,19 +4,22 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
-void token_printer(const saxxy_token *token, void __attribute__ ((unused)) *user_handle) {
+bool token_printer(const saxxy_token_t *token, void __attribute__ ((unused)) *user_handle) {
 	size_t i, j;
 	switch(token->type) {
 	case SAXXY_TOKEN_TAG_OPEN:
 	case SAXXY_TOKEN_TAG_CLOSE:
-	case SAXXY_TOKEN_TAG_OPEN_CLOSE:
-		if(token->type&SAXXY_TOKEN_TAG_OPEN) {
+		if(token->type == SAXXY_TOKEN_TAG_OPEN) {
 			printf("tag(%lu): <", token->data.tag.name.len);
 		} else {
 			printf("tag(%lu): </", token->data.tag.name.len);
 		}
 		fwrite(token->data.tag.name.ptr, token->data.tag.name.len, 1, stdout);
-		fwrite(">", strlen(">"), 1, stdout);
+		if(token->data.tag.empty) {
+			fwrite("/>", strlen("/>"), 1, stdout);
+		} else {
+			fwrite(">", strlen(">"), 1, stdout);
+		}
 		fwrite("\n", 1, 1, stdout);
 		for(i = 0; i < token->data.tag.attributes.count; i++) {
 			if(token->data.tag.attributes.ptr[i].name.ptr) {
@@ -27,7 +30,7 @@ void token_printer(const saxxy_token *token, void __attribute__ ((unused)) *user
 
 			if(token->data.tag.attributes.ptr[i].value.ptr) {
 				if(SAXXY_STRCASECMP_STATIC("style", token->data.tag.attributes.ptr[i].name) && token->data.tag.attributes.ptr[i].value.ptr) {
-					saxxy_attribute_array style_attributes;
+					saxxy_attribute_array_t style_attributes;
 					memset(&style_attributes, 0, sizeof(style_attributes));
 					saxxy_style_parse(&style_attributes, token->data.tag.attributes.ptr[i].value);
 					for(j = 0; j < style_attributes.count; j++) {
@@ -64,14 +67,40 @@ void token_printer(const saxxy_token *token, void __attribute__ ((unused)) *user
 		fwrite("\n", 1, 1, stdout);
 	break;
 
-	default:
+	case SAXXY_TOKEN_ENTITY:
+		switch(token->data.entity.type) {
+		case SAXXY_ENTITY_TYPE_NAME:
+			printf("entity_name(%lu): ", token->data.entity.name.len);
+			fwrite(token->data.entity.name.ptr, token->data.entity.name.len, 1, stdout);
+			fwrite("\n", 1, 1, stdout);
+		break;
+
+		case SAXXY_ENTITY_TYPE_DECIMAL:
+			printf("entity_decimal(%lu): ", token->data.entity.decimal.len);
+			fwrite(token->data.entity.decimal.ptr, token->data.entity.decimal.len, 1, stdout);
+			fwrite("\n", 1, 1, stdout);
+		break;
+
+		case SAXXY_ENTITY_TYPE_HEXADECIMAL:
+			printf("entity_hexadecimal(%lu): ", token->data.entity.hexadecimal.len);
+			fwrite(token->data.entity.hexadecimal.ptr, token->data.entity.hexadecimal.len, 1, stdout);
+			fwrite("\n", 1, 1, stdout);
+		break;
+
+		default:
+			abort();
+		}
 	break;
+
+	default:
+		abort();
 	}
+
+	return true;
 }
 
 int main(int argc, char *argv[]) {
-	saxxy_parser parser;
-	memset(&parser, 0, sizeof(parser));
+	saxxy_parser_t *parser = saxxy_parser_new();
 
 	if(argc < 2) {
 		printf("Usage: %s <file>\n", argv[0]);
@@ -85,12 +114,14 @@ int main(int argc, char *argv[]) {
 	}
 
 	fseek(f, 0, SEEK_END);
-	parser.len = ftell(f);
+	size_t len = ftell(f);
 
-	parser.data = mmap(NULL, parser.len, PROT_READ, MAP_PRIVATE, fileno(f), 0);
-	parser.token_handler = &token_printer;
-	saxxy_html_parse(&parser);
-	saxxy_parser_clean(&parser);
+	char *data = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fileno(f), 0);
+	saxxy_parser_init(parser, data, len);
+	saxxy_parser_set_token_handler(parser, &token_printer, NULL);
+	saxxy_html_parse(parser);
+	saxxy_parser_free(parser);
+	munmap(data, len);
 	fclose(f);
 	return 0;
 }

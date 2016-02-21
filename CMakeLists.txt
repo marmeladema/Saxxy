@@ -5,7 +5,11 @@ include_directories("include")
 include_directories("src")
 include_directories("examples")
 
-set(CMAKE_CPP_FLAGS "-g -Wall")
+set(LIBSAXXY_INCLUDE_DIR
+	${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+set(CMAKE_CPP_FLAGS "-g -Wall -Wextra")
 set(CMAKE_C_FLAGS "-g -Wall -Wextra")
 
 add_library(saxxy SHARED
